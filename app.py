@@ -496,14 +496,14 @@ def analyze_word():
         return jsonify({'error': f'服务器内部错误: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    # 获取Heroku提供的端口，如果没有则使用5001
-    port = int(os.environ.get('PORT', 5001))
+    # 获取环境变量中的端口，如果没有则使用10000（Render的默认端口）
+    port = int(os.environ.get('PORT', 10000))
     if is_port_in_use(port):
         logger.error(f"端口 {port} 已被占用")
         print(f"错误：端口 {port} 已被占用")
         print("请确保没有其他程序在使用该端口，或修改端口号")
         sys.exit(1)
     
-    logger.info(f"服务器将在 http://localhost:{port} 启动")
-    print(f"服务器将在 http://localhost:{port} 启动")
+    logger.info(f"服务器将在 http://0.0.0.0:{port} 启动")
+    print(f"服务器将在 http://0.0.0.0:{port} 启动")
     app.run(host='0.0.0.0', port=port) 
