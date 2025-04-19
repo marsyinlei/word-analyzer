@@ -122,7 +122,7 @@
             analyzeButton.disabled = true;
             resultDiv.innerHTML = '<div class="loading">正在分析...</div>';
 
-            fetch('http://localhost:5001/analyze', {
+            fetch('/analyze', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
