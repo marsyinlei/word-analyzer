@@ -131,7 +131,7 @@ def get_phonetic(word):
     return None
 
 def split_syllables(word):
-    """基于发音规则和字母组合的音节拆分"""
+    """基于发音规则和人类阅读习惯的音节拆分"""
     word = word.lower()
     
     # 获取音标
@@ -188,6 +188,18 @@ def split_syllables(word):
         'heritage': {
             'syllables': ['he', 'ri', 'tage'],
             'phonemes': [['h', 'ˈɛ'], ['r', 'ɪ'], ['t', 'ɪ', 'dʒ']]
+        },
+        'lecture': {
+            'syllables': ['lec', 'ture'],
+            'phonemes': [['l', 'ˈɛ', 'k'], ['tʃ', 'ər']]
+        },
+        'female': {
+            'syllables': ['fe', 'male'],
+            'phonemes': [['f', 'ˈi'], ['m', 'ˌeɪ', 'l']]
+        },
+        'congratulations': {
+            'syllables': ['con', 'gra', 'tu', 'la', 'tions'],
+            'phonemes': [['k', 'ə', 'n'], ['g', 'r', 'ˌæ'], ['tʃ', 'u'], ['l', 'ˈeɪ'], ['ʃ', 'ə', 'n', 'z']]
         }
     }
     
@@ -202,22 +214,51 @@ def split_syllables(word):
     
     original_cmu_phonemes = d[word][0]
     
-    # 辅音组合和发音规则
+    # 辅音组合和发音规则 - 这些组合通常保持在一起
     consonant_blends = {
         'bl', 'br', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'pl', 'pr', 'sc', 'sk', 'sl', 
         'sm', 'sn', 'sp', 'st', 'sw', 'tr', 'tw', 'scr', 'spr', 'str', 'thr', 'shr', 'spl', 
-        'squ', 'ch', 'sh', 'th', 'ph', 'wh', 'gn', 'kn', 'wr', 'qu', 'ck'
+        'squ', 'ch', 'sh', 'th', 'ph', 'wh', 'gn', 'kn', 'wr', 'qu', 'ck', 'dg', 'gh', 'ng', 'tch'
     }
     
-    # 常见前缀
-    common_prefixes = ['re', 'de', 'in', 'un', 'im', 'dis', 'mis', 'pre', 'ex', 'sub', 'inter', 
-                       'super', 'over', 'under', 'non', 'anti', 'en', 'em', 'for', 'fore', 'pro', 
-                       'co', 'con', 'com']
+    # 不可分割的发音单元 - 这些单元在音节拆分时应该保持完整
+    indivisible_units = {
+        'tion', 'sion', 'ture', 'cious', 'tious', 'gious', 'cial', 'tial', 'ple', 'ble', 
+        'dle', 'gle', 'kle', 'fle', 'zle', 'le', 'ce', 'ge', 'se', 'ze', 'que', 'gue'
+    }
     
-    # 常见后缀
-    common_suffixes = ['tion', 'sion', 'ment', 'ness', 'ful', 'less', 'able', 'ible', 'ity', 'ty', 
-                       'ly', 'ing', 'ed', 'er', 'or', 'ar', 'ist', 'ism', 'ate', 'al', 'ial', 'ic', 
-                       'ical', 'ious', 'ous', 'ive', 'en', 'hood', 'ship', 'age']
+    # 常见前缀 - 按长度排序以便优先匹配更长的前缀
+    common_prefixes = [
+        # 三字母及以上前缀
+        'anti', 'auto', 'circum', 'contra', 'counter', 'dis', 'down', 'extra', 'hyper', 'inter', 
+        'intra', 'micro', 'mid', 'mis', 'multi', 'non', 'over', 'post', 'pre', 'pro', 
+        'pseudo', 'retro', 'semi', 'sub', 'super', 'supra', 'tele', 'trans', 'tri', 'ultra', 'un', 'under',
+        # 双字母前缀
+        'co', 'de', 'di', 'em', 'en', 'ex', 'im', 'in', 'ir', 'ob', 'of', 'on', 'op', 're',
+        # 单字母前缀
+        'a', 'e', 'i', 'o', 'u'
+    ]
+    
+    # 常见后缀 - 按长度排序以便优先匹配更长的后缀
+    common_suffixes = [
+        # 四字母及以上后缀
+        'ation', 'ition', 'cious', 'tious', 'sious', 'aceous', 'alous', 'ulous', 'ative', 'itive',
+        'fully', 'ously', 'lessly', 'iness', 'ement', 'wards', 'ature', 'itive', 'tude', 'logy', 
+        'graphy', 'tomy', 'metry', 'scopy', 'tion', 'sion', 'ment', 'ness', 'hood', 'ship', 'ible', 'able',
+        # 三字母后缀
+        'ant', 'ent', 'ary', 'ery', 'ory', 'ism', 'ist', 'ity', 'ize', 'ise', 'ify', 'ate', 'ive', 'ure', 'ous', 'ious',
+        # 双字母后缀
+        'al', 'ic', 'ly', 'er', 'or', 'ee', 'en', 'ed', 'ty', 'fy', 'ry', 'cy', 'is',
+        # 单字母后缀
+        'y', 's'
+    ]
+    
+    # 检查单词是否以这些结尾，并且这些结尾应作为单独音节
+    terminal_syllables = {
+        'tion': True, 'sion': True, 'cian': True, 'le': True, 'ture': True,
+        'sure': True, 'ble': True, 'dle': True, 'gle': True, 'kle': True,
+        'fle': True, 'zle': True, 'cle': True, 'ple': True
+    }
     
     # 1. 首先提取元音位置
     vowels = 'aeiouy'
@@ -227,28 +268,32 @@ def split_syllables(word):
     if not vowel_positions:
         return [phonemes], [word]
     
-    # 2. 识别前缀
-    prefix = None
-    prefix_end = 0
-    for p in sorted(common_prefixes, key=len, reverse=True):
-        if word.startswith(p) and len(p) < len(word) // 2:
-            # 确保前缀的末尾为辅音或前缀后的字符为辅音
-            if (p[-1] not in vowels) or (len(p) < len(word) and word[len(p)] not in vowels):
-                prefix = p
-                prefix_end = len(p)
-                break
+    # 2. 检查单词是否以特定后缀结尾，这些后缀应作为单独音节
+    terminal_syllable = None
+    terminal_start = len(word)
     
-    # 3. 识别后缀
-    suffix = None
-    suffix_start = len(word)
-    for s in sorted(common_suffixes, key=len, reverse=True):
-        if word.endswith(s) and len(s) < len(word) // 2:
-            suffix = s
-            suffix_start = len(word) - len(s)
+    for suffix in sorted(terminal_syllables.keys(), key=len, reverse=True):
+        if word.endswith(suffix) and len(suffix) < len(word):
+            terminal_syllable = suffix
+            terminal_start = len(word) - len(suffix)
             break
     
-    # 4. 处理中间部分
-    middle = word[prefix_end:suffix_start]
+    # 3. 识别前缀
+    prefix = None
+    prefix_end = 0
+    
+    for p in common_prefixes:
+        if word.startswith(p) and len(p) < len(word) // 2 + 1:
+            # 确保前缀不会覆盖整个单词
+            if terminal_syllable and len(word) - len(p) <= len(terminal_syllable):
+                continue
+                
+            prefix = p
+            prefix_end = len(p)
+            break
+    
+    # 4. 识别中间部分的发音单元和辅音组合
+    middle = word[prefix_end:terminal_start]
     
     # 如果中间部分较短，将其作为一个整体
     if len(middle) <= 3:
@@ -257,8 +302,8 @@ def split_syllables(word):
             syllables.append(prefix)
         if middle:
             syllables.append(middle)
-        if suffix:
-            syllables.append(suffix)
+        if terminal_syllable:
+            syllables.append(terminal_syllable)
         
         # 如果只有一个音节，则整个单词作为音节
         if not syllables:
@@ -267,70 +312,102 @@ def split_syllables(word):
         # 5. 为中间部分拆分音节
         middle_syllables = []
         
-        # 标识元音在CMU音标中的位置
-        vowel_indices = []
-        for i, phoneme in enumerate(original_cmu_phonemes):
-            if any(phoneme.startswith(v) for v in ['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY', 'IH', 'IY', 'OW', 'OY', 'UH', 'UW']):
-                vowel_indices.append(i)
-        
-        # 根据元音位置和辅音规则确定音节边界
-        middle_boundaries = []
-        
-        # 在中间部分查找字母元音位置
-        middle_vowel_positions = [i - prefix_end for i in vowel_positions if prefix_end <= i < suffix_start]
+        # 找出中间部分的元音位置
+        middle_vowel_positions = [i - prefix_end for i in vowel_positions if prefix_end <= i < terminal_start]
         
         if len(middle_vowel_positions) <= 1:
             # 如果中间部分只有0-1个元音，将其作为一个整体
             middle_syllables = [middle]
         else:
-            # 根据元音之间的辅音数量确定边界
             prev_end = 0
             for i in range(len(middle_vowel_positions) - 1):
                 curr_pos = middle_vowel_positions[i]
                 next_pos = middle_vowel_positions[i + 1]
                 
-                # 找到当前元音之后的第一个辅音
+                # 找到当前元音之后的辅音开始位置
                 cons_start = curr_pos
                 while cons_start + 1 < len(middle) and cons_start + 1 < next_pos and middle[cons_start + 1] in vowels:
                     cons_start += 1
                 
                 # 当前元音到下一个元音之间的辅音数量
                 cons_count = next_pos - cons_start - 1
+                boundary = 0
                 
-                # 根据辅音数量确定音节边界
+                # 根据辅音数量和特殊规则确定音节边界
                 if cons_count == 0:
-                    # 如果没有辅音，在第一个元音后分界
+                    # 如果没有辅音，在元音之间分界
                     boundary = curr_pos + 1
                 elif cons_count == 1:
-                    # 如果有一个辅音，在元音后的辅音后分界 (V-CV)
-                    boundary = curr_pos + 2
-                else:
-                    # 检查辅音组合
-                    consonant_pair = middle[cons_start+1:next_pos]
-                    if consonant_pair in consonant_blends or any(blend in consonant_pair for blend in consonant_blends):
-                        # 辅音组合保持在一起，边界在组合前
+                    # 单辅音规则：一般在辅音后分界 (V-CV)
+                    # 例外：特殊的辅音-元音组合可能保持在一起
+                    next_syllable = middle[cons_start+1:next_pos+1]
+                    if len(next_syllable) > 1 and any(next_syllable.startswith(unit) for unit in indivisible_units):
+                        # 如果下一个音节以不可分割单元开始，保留辅音在当前音节
                         boundary = cons_start + 1
                     else:
-                        # 在辅音中间分界
-                        boundary = cons_start + 1 + cons_count // 2
+                        # 否则，标准V-CV规则
+                        boundary = cons_start + 2
+                else:
+                    # 多辅音规则
+                    # 1. 检查是否有辅音组合需要保持在一起
+                    consonant_sequence = middle[cons_start+1:next_pos]
+                    
+                    # 检查是否有不可分割的发音单元
+                    indivisible_match = False
+                    for unit in sorted(indivisible_units, key=len, reverse=True):
+                        if unit in consonant_sequence:
+                            unit_start = consonant_sequence.find(unit)
+                            # 如果不可分割单元在序列开始，保持在下一个音节
+                            if unit_start == 0:
+                                boundary = cons_start + 1
+                            # 如果在序列结束，保持在下一个音节
+                            elif unit_start + len(unit) == len(consonant_sequence):
+                                boundary = cons_start + 1 + unit_start
+                            # 如果在中间，在单元前分界
+                            else:
+                                boundary = cons_start + 1 + unit_start
+                            indivisible_match = True
+                            break
+                    
+                    # 如果没有找到不可分割单元，检查辅音组合
+                    if not indivisible_match:
+                        blend_match = False
+                        for blend in sorted(consonant_blends, key=len, reverse=True):
+                            if blend in consonant_sequence:
+                                blend_start = consonant_sequence.find(blend)
+                                # 如果辅音组合在序列开始，保持在下一个音节
+                                if blend_start == 0:
+                                    boundary = cons_start + 1
+                                # 如果在序列结束，保持在下一个音节
+                                elif blend_start + len(blend) == len(consonant_sequence):
+                                    boundary = cons_start + 1 + blend_start
+                                # 如果在中间，在组合前分界
+                                else:
+                                    boundary = cons_start + 1 + blend_start
+                                blend_match = True
+                                break
+                        
+                        # 如果没有找到辅音组合，在辅音中间分界
+                        if not blend_match:
+                            boundary = cons_start + 1 + cons_count // 2
                 
-                # 添加边界（相对于middle的起始位置）
-                middle_syllables.append(middle[prev_end:boundary])
-                prev_end = boundary
+                if boundary > 0 and boundary < len(middle):
+                    middle_syllables.append(middle[prev_end:boundary])
+                    prev_end = boundary
             
             # 添加最后一个音节
             if prev_end < len(middle):
                 middle_syllables.append(middle[prev_end:])
         
-        # 组合前缀、中间音节和后缀
+        # 6. 组合前缀、中间音节和终止音节
         syllables = []
         if prefix:
             syllables.append(prefix)
         syllables.extend(middle_syllables)
-        if suffix:
-            syllables.append(suffix)
+        if terminal_syllable:
+            syllables.append(terminal_syllable)
     
-    # 6. 修正音节边界，确保每个音节至少有一个元音
+    # 7. 修正音节边界，确保每个音节至少有一个元音
     final_syllables = []
     for i, syl in enumerate(syllables):
         if not any(char in vowels for char in syl) and i > 0 and i < len(syllables) - 1:
@@ -344,71 +421,88 @@ def split_syllables(word):
         else:
             final_syllables.append(syl)
     
-    # 合并过短的音节（长度为1且不是元音）
-    i = 1
-    while i < len(final_syllables):
-        if len(final_syllables[i]) == 1 and final_syllables[i] not in vowels:
-            if i > 0:
-                # 与前一个音节合并
-                final_syllables[i-1] += final_syllables[i]
+    # 8. 连续优化：合并过短的音节
+    i = 0
+    while i < len(final_syllables) - 1:
+        curr_syl = final_syllables[i]
+        next_syl = final_syllables[i+1]
+        
+        # 如果当前音节过短（1-2个字符）并且不是元音开头的音节
+        if len(curr_syl) <= 2 and not any(curr_syl.startswith(v) for v in vowels):
+            # 检查是否应该与下一个音节合并
+            merged = False
+            
+            # 特殊规则：如果是以元音开头的前缀（如a-, e-, i-），保持独立
+            if curr_syl in ['a', 'e', 'i', 'o', 'u'] and i == 0:
+                i += 1
+                continue
+                
+            # 如果当前和下一个音节组合起来形成一个有意义的单元，则合并
+            combined = curr_syl + next_syl
+            if any(combined.startswith(p) for p in common_prefixes) or any(combined.endswith(s) for s in common_suffixes):
+                final_syllables[i] = combined
+                final_syllables.pop(i+1)
+                merged = True
+            
+            # 如果没有基于语义合并，检查长度和位置
+            if not merged and len(curr_syl) == 1 and curr_syl not in vowels:
+                # 单个辅音字母通常合并到下一个音节
+                final_syllables[i+1] = curr_syl + next_syl
                 final_syllables.pop(i)
-            else:
-                # 与后一个音节合并
-                final_syllables[i+1] = final_syllables[i] + final_syllables[i+1]
-                final_syllables.pop(i)
-        else:
-            i += 1
+                continue  # 不增加i，因为我们删除了当前元素
+        
+        i += 1
     
-    # 7. 确认最终的音节集不会遗漏或重复字母
+    # 9. 确认最终的音节集不会遗漏或重复字母
     joined = ''.join(final_syllables)
     if joined != word:
-        # 如果有问题，回退到简单拆分
+        # 如果有问题，回退到基于元音的简单拆分
         final_syllables = []
-        for i in range(len(vowel_positions)):
-            if i == 0:
-                # 第一个元音及其前面的所有辅音
-                if vowel_positions[i] > 0:
-                    final_syllables.append(word[:vowel_positions[i]+1])
-                else:
-                    final_syllables.append(word[0])
-            elif i == len(vowel_positions) - 1:
-                # 最后一个元音及其间隔和后面的所有字母
-                start = vowel_positions[i-1] + 1
-                final_syllables.append(word[start:])
-            else:
-                # 中间元音，从上一个元音后到当前元音
-                start = vowel_positions[i-1] + 1
-                end = vowel_positions[i] + 1
-                final_syllables.append(word[start:end])
-    
-    # 8. 映射音标到音节
-    # 获取原始CMU音标对应的IPA音标
-    cmu_phonemes = original_cmu_phonemes
-    
-    # 将CMU音标映射到IPA音标
-    cmu_to_ipa_map = {}
-    for i, phoneme in enumerate(cmu_phonemes):
-        if i < len(phonemes):
-            cmu_to_ipa_map[phoneme] = phonemes[i]
-    
-    # 确保音节数量与元音数量匹配
-    vowel_count = sum(1 for char in word if char in vowels)
-    while len(final_syllables) > vowel_count and len(final_syllables) > 1:
-        # 合并最短的相邻音节
-        min_len = float('inf')
-        min_idx = -1
-        for i in range(len(final_syllables) - 1):
-            pair_len = len(final_syllables[i]) + len(final_syllables[i+1])
-            if pair_len < min_len:
-                min_len = pair_len
-                min_idx = i
+        syllable_start = 0
         
-        if min_idx >= 0:
-            # 合并最短的相邻音节
-            final_syllables[min_idx] += final_syllables[min_idx+1]
-            final_syllables.pop(min_idx+1)
+        # 根据元音位置确定音节
+        for i in range(len(vowel_positions)):
+            vowel_pos = vowel_positions[i]
+            
+            # 第一个元音的情况
+            if i == 0:
+                # 如果元音不是第一个字符，包括前面的辅音
+                if vowel_pos > 0:
+                    final_syllables.append(word[:vowel_pos+1])
+                    syllable_start = vowel_pos + 1
+                else:
+                    # 如果元音是第一个字符，只添加元音
+                    final_syllables.append(word[0])
+                    syllable_start = 1
+            else:
+                # 确定音节边界
+                prev_vowel = vowel_positions[i-1]
+                
+                # 计算两个元音之间的辅音数量
+                cons_count = vowel_pos - prev_vowel - 1
+                
+                if cons_count == 0:
+                    # 两个连续元音，在第一个元音后分界
+                    if syllable_start <= prev_vowel:
+                        final_syllables.append(word[syllable_start:prev_vowel+1])
+                        syllable_start = prev_vowel + 1
+                elif cons_count == 1:
+                    # 一个辅音，通常在元音后分界 (V-CV)
+                    if syllable_start <= prev_vowel + 1:
+                        final_syllables.append(word[syllable_start:prev_vowel+2])
+                        syllable_start = prev_vowel + 2
+                else:
+                    # 多个辅音，根据位置确定边界
+                    boundary = prev_vowel + 1 + cons_count // 2
+                    if syllable_start <= boundary:
+                        final_syllables.append(word[syllable_start:boundary])
+                        syllable_start = boundary
+        
+        # 添加最后一部分
+        if syllable_start < len(word):
+            final_syllables.append(word[syllable_start:])
     
-    # 为音节分配音标
+    # 10. 为音节分配音标
     syllable_phonemes = []
     
     if len(final_syllables) == 1:
@@ -418,7 +512,6 @@ def split_syllables(word):
         # 尝试基于音素边界分配音标
         # 简单方案：根据音节长度比例分配音标
         total_length = sum(len(s) for s in final_syllables)
-        phoneme_distribution = []
         
         current_idx = 0
         for syllable in final_syllables:
@@ -436,7 +529,7 @@ def split_syllables(word):
         if current_idx < len(phonemes):
             syllable_phonemes[-1].extend(phonemes[current_idx:])
     
-    logger.info(f"音节拆分（优化版）: {word} -> {final_syllables}")
+    logger.info(f"音节拆分（人类习惯版）: {word} -> {final_syllables}")
     logger.info(f"音节及音标: {list(zip(final_syllables, syllable_phonemes))}")
     
     return syllable_phonemes, final_syllables
