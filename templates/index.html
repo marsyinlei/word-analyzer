@@ -82,19 +82,6 @@
             text-align: center;
             margin-top: 5px;
         }
-        .natural-reading {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 10px;
-        }
-        .reading-unit {
-            font-size: 16px;
-            padding: 3px 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-        }
         .error {
             color: red;
             margin-top: 10px;
@@ -135,7 +122,7 @@
             analyzeButton.disabled = true;
             resultDiv.innerHTML = '<div class="loading">正在分析...</div>';
 
-            fetch('/analyze', {
+            fetch('http://localhost:5001/analyze', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -167,7 +154,7 @@
             // 显示完整单词和音标
             const fullWordDiv = document.createElement('div');
             fullWordDiv.className = 'full-word';
-            fullWordDiv.innerHTML = `<strong>${data.word}</strong> <span class="phonetic">/${data.full_phonetic}/</span>`;
+            fullWordDiv.innerHTML = `<strong>${data.word}</strong> <span class="phonetic">/${data.full_phonetic.join('')}/</span>`;
             resultDiv.appendChild(fullWordDiv);
 
             // 音节拆分部分
@@ -185,36 +172,12 @@
             data.syllables.forEach(syllable => {
                 const syllableDiv = document.createElement('div');
                 syllableDiv.className = 'syllable';
-                syllableDiv.innerHTML = `${syllable.text}<span class="phonetic">/${syllable.phonetic}/</span>`;
+                syllableDiv.innerHTML = `${syllable.text}<span class="phonetic">/${syllable.phonetic.join('')}/</span>`;
                 syllableContainer.appendChild(syllableDiv);
             });
             
             syllableSection.appendChild(syllableContainer);
             resultDiv.appendChild(syllableSection);
-
-            // 自然拼读拆分部分
-            if (data.natural_reading) {
-                const readingSection = document.createElement('div');
-                readingSection.className = 'section';
-                
-                const readingTitle = document.createElement('div');
-                readingTitle.className = 'section-title';
-                readingTitle.textContent = '自然拼读拆分及对应的音标：';
-                readingSection.appendChild(readingTitle);
-                
-                const readingContainer = document.createElement('div');
-                readingContainer.className = 'natural-reading';
-                
-                data.natural_reading.forEach(unit => {
-                    const unitDiv = document.createElement('div');
-                    unitDiv.className = 'reading-unit';
-                    unitDiv.innerHTML = `${unit.text}<span class="phonetic">/${unit.phonetic}/</span>`;
-                    readingContainer.appendChild(unitDiv);
-                });
-                
-                readingSection.appendChild(readingContainer);
-                resultDiv.appendChild(readingSection);
-            }
         }
 
         function showError(message) {
